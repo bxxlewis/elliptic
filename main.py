@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.optimize import newton
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, FFMpegWriter
 
 def F(E,e,M):
 	return E-e*np.sin(E)-M
@@ -18,7 +18,10 @@ Re = 6378e3		# [m] radius of Earth
 a = 4*Re		# [m] semimajor axis
 rp = 1.5*Re		# [m] perigee radius
 mu = 3.986e5	# [km^3*s^-2] G*m constant for Earth
-t = np.linspace(0,12,500)*3600.0 # [s] time vector 
+tmax = 12 # sufficient for one orbit
+fps = 10
+res = 5
+t = np.linspace(0,tmax,tmax*fps*res)*3600.0 # [s] time vector
 #t = t[-1] # debug
 n = len(t)
 
@@ -55,7 +58,7 @@ for i in np.arange(n):
 		f = f[:i-1]
 		r = r[:i-1]
 		n = i-1
-		print('break!')
+		print('break! %i out of %i'%(i,n)) # n is reduced by 1 in the previous line!
 		break
 
 
@@ -69,13 +72,13 @@ an = plt.annotate('time = %5.1f hours\nradius = %5.1fe3 km'%((t[0]/3600),r[0]/1e
 def init():
     #ax.set_xlim(0, 2*np.pi)
     #ax.set_ylim(0,2)
-    ax.clear()
+    #ax.clear() # use this if using show(), comment out if making *.mp4
     xdata, ydata = [], []
     plt.polar(np.linspace(0,2*np.pi,361),np.ones([361]),'-b')
     ax.set_rmax(7.0)
     ax.set_rticks(np.arange(7))
     #ax.set_title('Elliptical orbit about the Earth\nsemimajor axis = %.3f\nperigee radius = %.3f\n'%(a/Re,rp/Re),fontsize=10)
-    ax.set_title('semimajor axis = %.3f, perigee radius = %.3f'%(a/Re,rp/Re),fontsize=10)
+    ax.set_title('semimajor axis = %.3f, perigee radius = %.3f'%(a/Re,rp/Re),fontsize=14)
 
     return ln,
 
@@ -89,6 +92,12 @@ def update(frame):
 
 ani = FuncAnimation(fig, update, frames=np.arange(n),
                     init_func=init, blit=True,
-                    interval=25)#,save_count=50)
+                    interval=5,save_count=n,repeat=True) # repeat only affects the show() command
+                    
 
-plt.show()
+
+#plt.show()
+
+# executed this in cmd to get *.mp4 to work:
+# >install -c conda-forge ffmpeg
+writer = FFMpegWriter(fps=fps*res);ani.save('animation.mp4',writer=writer) # fps makes 1 second : 1hour
